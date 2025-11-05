@@ -1,0 +1,107 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{microtype}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Pathfinder}
+\lhead{User Manual}
+\cfoot{\thepage}
+
+\setlist[itemize]{noitemsep,topsep=2pt,leftmargin=1.2cm}
+
+\title{\vspace{-2cm}\textbf{Pathfinder}\\\large User Documentation and Technical Summary}
+\author{Developed in C++}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-0.4cm}
+\hrule
+\vspace{0.4cm}
+
+\section*{1. Overview}
+\textbf{Pathfinder} is a C++ simulation of an emergency response network using a grid-based graph model of a city.  
+Each grid node represents an intersection, house, hospital, or ambulance station. The system uses \textbf{Dijkstra’s shortest path algorithm} to route ambulances and find hospitals during emergencies, while dynamically responding to disasters such as earthquakes and floods that damage parts of the grid.
+
+\section*{2. Menu Options}
+\begin{itemize}
+    \item \textbf{ (1)Add Ambulance:} Assign a node as an ambulance station.
+    \item \textbf{ (2)Add House:} Mark a node as a house.
+    \item \textbf{ (3)Add Hospital:} Assign a node as a hospital.
+    \item \textbf{ (4)Trigger Emergency:} Simulate an incident and trace optimal paths.
+    \item \textbf{ (5)Simulate Earthquake:} Damage nearby nodes randomly.
+    \item \textbf{ (6)Simulate Rain:} Flood nodes with poor drainage.
+    \item \textbf{ (7)Show Damaged Nodes:} Display damaged or flooded nodes.
+    \item \textbf{ (8)Exit:} Quit the simulation.
+\end{itemize}
+
+\section*{3. Compilation and Execution}
+\textbf{To Compile:} \begin{verbatim} g++ main.cpp GridGraph.cpp -o Pathfinder \end{verbatim}
+\textbf{To Run:} \begin{verbatim} ./Pathfinder \end{verbatim}
+
+\section*{4. Example Run}
+\begin{verbatim}
+==========================================
+     EMERGENCY RESPONSE SIMULATION
+==========================================
+Enter grid size: 4
+
+4x4 grid created successfully!
+Default: Node 0 = Ambulance | Node 15 = Hospital
+
+Enter your choice: 2
+Enter node ID to assign as House : 5
+ House assigned to node 5
+
+Enter your choice: 4
+Enter house node ID for emergency: 5
+
+ Emergency triggered at node 5!
+Finding shortest path from ambulance to emergency house...
+Path: AmbulanceStation -> Intersection_4 -> House_5
+Distance: 9
+Finding nearest hospital from the emergency house...
+Path: House_5 -> Intersection_9 -> CityHospital
+Distance: 12
+\end{verbatim}
+
+\section*{5. Tips for Effective Simulation}
+\begin{itemize}
+    \item \textbf{Setup before running:} Ensure that at least one \textbf{ambulance} and one \textbf{hospital} node exist before triggering an emergency to guarantee valid rescue routes.
+    \item \textbf{Experiment safely:} Start with small grids such as $4\times4$ or $5\times5$ to clearly observe pathfinding and disaster effects.
+    \item \textbf{Interpret disasters:} Damaged or flooded nodes (type = \texttt{DISASTER}) are permanently inaccessible until a new simulation run.
+    \item \textbf{Randomization note:} Each simulation run uses random edge weights and drainage values, so paths and damages differ every time.
+    \item \textbf{Performance tip:} Larger grids increase route-finding complexity; use moderate sizes for smoother interaction.
+    \item \textbf{Debugging help:} If routes seem incomplete, check whether key nodes (house, ambulance, hospital) were affected by disasters.
+\end{itemize}
+
+
+\section*{6. Technical Summary}
+\begin{itemize}
+    \item \textbf{Language \& Tools:} Implemented in C++ using STL containers, priority queues, and random number generation.
+    \item \textbf{Core Algorithm:} Dijkstra’s algorithm for shortest path computation.
+    \item \textbf{Structure Overview:}
+    \begin{itemize}
+        \item \texttt{NodeStructures.h} – Defines node attributes (ID, type, name, drainage).
+        \item \texttt{GridGraph.h /.cpp} – Implements grid construction, pathfinding, and disasters.
+        \item \texttt{main.cpp} – Provides the interactive menu-driven simulation.
+    \end{itemize}
+    \item \textbf{Disaster Handling:}
+    \begin{itemize}
+        \item Earthquake: Damages nodes within a radius of the epicenter.
+        \item Rain: Floods low-lying nodes based on random drainage levels.
+    \end{itemize}
+\end{itemize}
+
+\vfill
+\noindent\textit{Developed for educational purposes to demonstrate graph algorithms, routing, and disaster simulation.}
+
+\end{document}

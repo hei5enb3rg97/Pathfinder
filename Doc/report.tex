@@ -1,0 +1,688 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\geometry{margin=1in}
+
+\lstdefinestyle{cpp}{
+language=C++,
+backgroundcolor=\color{gray!10},
+basicstyle=\ttfamily\small,
+keywordstyle=\color{blue}\bfseries,
+commentstyle=\color{green!40!black},
+stringstyle=\color{orange},
+numbers=left,
+numberstyle=\tiny,
+breaklines=true,
+frame=single,
+showstringspaces=false
+}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+{\Huge \textbf{Pathfinder}}\\[1cm]
+{\Large \textbf{A C++ Simulation Using Graph Algorithms}}\\[2cm]
+{\Large Prepared by:}\\
+\textbf{G.Aakash (106124034), Saketh Koundinya (106124084), Jothi Roshini (106124046)}\\[1cm]
+{\Large Date: \today}\\[3cm]
+\vfill
+\end{titlepage}
+
+
+\tableofcontents
+\newpage
+
+\chapter{Introduction}
+
+In modern smart cities, rapid disaster response plays a vital role in saving lives and minimizing damage.
+This project implements a simple yet effective \textbf{Disaster Management System} in C++, simulating
+the city as an $n \times n$ grid where intersections, houses, hospitals, and other entities are modeled as nodes.
+The system dynamically calculates optimal emergency response paths and simulates environmental disasters
+that affect road networks.
+
+\chapter{System Overview}
+
+\section{Architecture}
+The system is built around a graph-based representation of a city:
+\begin{itemize}
+\item Each node represents a location: house, hospital, ambulance station, intersection, or disaster site.
+\item Each edge represents a bidirectional road with an associated travel weight (distance or time).
+\end{itemize}
+
+\section{Node Types}
+The nodes are classified using an enumeration:
+\begin{itemize}
+\item \textbf{AMBULANCE}: Location of an ambulance station.
+\item \textbf{HOUSE}: Represents a residence that may raise emergency calls.
+\item \textbf{HOSPITAL}: Destination for emergency routes.
+\item \textbf{INTERSECTION}: Generic road junction.
+\item \textbf{DISASTER}: Damaged or blocked node.
+\end{itemize}
+
+\chapter{Implementation Details}
+
+\section{Class \texttt{GridGraph}}
+The class \texttt{GridGraph} defines the overall map structure and contains all relevant algorithms.
+
+\subsection{Member Variables}
+\begin{itemize}
+\item \texttt{int n}: Dimension of the grid.
+\item \texttt{vector<Node> nodes}: Stores all nodes and their attributes.
+\item \texttt{vector<vector<Edge>> adj}: Adjacency list representing edges.
+\end{itemize}
+
+\subsection{Core Functions}
+\begin{itemize}
+\item \texttt{buildGrid()}: Constructs a fully connected $n \times n$ grid with random edge weights (1–10).
+\item \texttt{assignNodeType()}: Assigns a specific type and name to a node.
+\item \texttt{dijkstra()}: Implements Dijkstra’s shortest path algorithm to compute the optimal path between two nodes.
+\item \texttt{findNearest()}: Finds the nearest node of a given type.
+\item \texttt{emergency()}: Simulates the emergency response process.
+\item \texttt{simulateEarthquake()}: Randomly damages nodes within a distance threshold from an epicenter.
+\item \texttt{simulateRain()}: Simulates flooding by damaging nodes with poor drainage.
+\end{itemize}
+
+\section{Pathfinding Algorithm}
+The Dijkstra algorithm is used for shortest path calculation:
+\begin{enumerate}
+\item Initialize all node distances to infinity.
+\item Use a min-priority queue to iteratively extract the node with the smallest distance.
+\item Update the distances of all adjacent nodes if a shorter path is found.
+\item Continue until the destination node is reached or all reachable nodes are visited.
+\end{enumerate}
+
+\chapter{Simulation and Output}
+
+\section{Setup}
+A sample simulation is created with a $5 \times 5$ grid.
+The following entities are defined:
+\begin{itemize}
+\item Node 0 — Ambulance station
+\item Node 12 — House
+\item Node 24 — Hospital
+\item Node 6 — House
+\item Node 18 — Hospital
+\end{itemize}
+
+\section{Sample Run}
+During execution, the program:
+\begin{enumerate}
+\item Builds the grid with random edge weights.
+\item Responds to an emergency from a specific house.
+\item Simulates rain or earthquake disasters.
+\item Reruns the emergency scenario after damage.
+\end{enumerate}
+
+\section{Example Console Output}
+\begin{verbatim}
+Finding shortest path from ambulance to emergency house...
+Path: AmbulanceStation -> Intersection_5 -> Intersection_10 -> House15
+Distance: 18
+Finding nearest hospital from the emergency house...
+Path: House15 -> Intersection_20 -> CityHospital
+Distance: 12
+Damaged nodes:
+Intersection_3 (ID 3)
+Intersection_7 (ID 7)
+House6 (ID 6)
+...
+\end{verbatim}
+
+\chapter{Code Listing}
+\section{Node and Edge Structures}
+
+\begin{lstlisting}[style=cpp, caption={NodeStructures.h – Node and Edge Definitions}]
+#pragma once
+#include <string>
+
+enum NodeType { AMBULANCE, HOUSE, HOSPITAL, INTERSECTION, DISASTER };
+
+struct Node {
+    int id;
+    NodeType type;
+    std::string name;
+    int drain;
+};
+
+struct Edge {
+    int to;
+    int weight;
+};
+\end{lstlisting}
+\section{Grid Graph Class Declaration}
+
+\begin{lstlisting}[style=cpp, caption={GridGraph.h – Graph Class Declaration}]
+#pragma once
+#include "NodeStructures.h"
+#include <vector>
+
+class GridGraph {
+public:
+    int n;
+    std::vector<Node> nodes;
+    std::vector<std::vector<Edge>> adj;
+
+    GridGraph(int size);
+    int nodeID(int row, int col);
+    void addEdge(int u, int v, int weight);
+    void buildGrid();
+    void assignNodeType(int id, NodeType type, std::string name = "");
+    std::vector<int> dijkstra(int src, int dest, int& total_cost);
+    int findNearest(int from, NodeType type);
+    void emergency(int from);
+    void printPath(const std::vector<int>& path);
+    void simulateearthquake(int epicenterID);
+    void simulateRain();
+    void damage();
+};
+\end{lstlisting}
+\section{Grid Graph Implementation}
+
+\begin{lstlisting}[style=cpp, caption={GridGraph.cpp – Graph Class Implementation}]
+#include "GridGraph.h"
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <limits>
+#include <random>
+#include <algorithm>
+#include <time.h>
+
+using namespace std;
+
+// constructor for the graph
+GridGraph::GridGraph(int size) : n(size) {
+    int total = n * n;
+    adj.resize(total);
+    nodes.resize(total);
+    for (int i = 0; i < total; i++) {
+        nodes[i].id = i;
+        nodes[i].type = INTERSECTION;
+        nodes[i].name = "Intersection_" + to_string(i);
+    }
+}
+// creates the base for nxn grid graph
+
+int GridGraph::nodeID(int row, int col) {
+    return row * n + col;
+}
+// returns node number based on rows and columns
+
+void GridGraph::addEdge(int u, int v, int weight) {
+    adj[u].push_back({ v, weight });
+    adj[v].push_back({ u, weight }); // undirected
+}
+// connects u to v and v to u (bidirectional edge)
+
+void GridGraph::buildGrid() {
+    mt19937 gen(time(0));
+    uniform_int_distribution<> dis(1, 10);
+    for (int r = 0; r < n; r++) {
+        for (int c = 0; c < n; c++) {
+            int current = nodeID(r, c);
+            if (r > 0) addEdge(current, nodeID(r - 1, c), dis(gen));
+            if (c > 0) addEdge(current, nodeID(r, c - 1), dis(gen));
+        }
+    }
+    uniform_int_distribution<> drain(1, 10);
+    for (auto &node : nodes) node.drain = drain(gen);
+}
+// creates edges between adjacent nodes and randomly assigns weights to simulate distance and traffic
+
+void GridGraph::assignNodeType(int id, NodeType type, string name) {
+    nodes[id].type = type;
+    if (!name.empty()) nodes[id].name = name;
+}
+// node type is set as intersection by default unless explicitly mentioned
+
+vector<int> GridGraph::dijkstra(int src, int dest, int& total_cost) {
+    int V = n * n;
+    vector<int> dist(V, numeric_limits<int>::max());
+    vector<int> vis(V);
+    vector<int> prev(V, -1);
+    dist[src] = 0;
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    vector<int> path;
+
+    if (nodes[src].type == DISASTER || src == -1 || dest == -1) return path;
+    pq.push({ 0, src });
+
+    while (!pq.empty()) {
+        auto d = pq.top().first;
+        auto u = pq.top().second;
+        pq.pop();
+        if (vis[u]) continue;
+        vis[u] = 1;
+
+        for (auto& edge : adj[u]) {
+            int v = edge.to;
+            int weight = edge.weight;
+            if (nodes[v].type == DISASTER) continue;
+            if (dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+                prev[v] = u;
+                pq.push({ dist[v], v });
+            }
+        }
+    }
+
+    total_cost = dist[dest];
+    if (total_cost == numeric_limits<int>::max()) return path;
+
+    for (int at = dest; at != -1; at = prev[at]) path.push_back(at);
+    reverse(path.begin(), path.end());
+    return path;
+}
+
+int GridGraph::findNearest(int from, NodeType type) {
+    int best = -1;
+    int minDist = numeric_limits<int>::max();
+    int dummyCost;
+    for (auto& node : nodes) {
+        if (node.type == type && node.type != DISASTER) {
+            vector<int> path = dijkstra(from, node.id, dummyCost);
+            if (!path.empty() && dummyCost < minDist) {
+                minDist = dummyCost;
+                best = node.id;
+            }
+        }
+    }
+    return best;
+}
+
+void GridGraph::emergency(int from) {
+    int costToHouse;
+    int nearestAmbulance = findNearest(from, AMBULANCE);
+
+    if (nodes[from].type == DISASTER) {
+        cout << "The node is damaged cannot access it" << endl;
+        return;
+    }
+    if (nearestAmbulance == -1) {
+        cout << "There are no Ambulances roaming at the moment" << endl;
+        nearestAmbulance = findNearest(from, HOSPITAL);
+    }
+
+    cout << "Finding shortest path from ambulance to emergency house..." << endl;
+    vector<int> pathToHouse = dijkstra(nearestAmbulance, from, costToHouse);
+    cout << "Path: ";
+    printPath(pathToHouse);
+    cout << "Distance: " << costToHouse << endl;
+
+    cout << "Finding nearest hospital from the emergency house..." << endl;
+    int nearestHospital = findNearest(from, HOSPITAL);
+    if (nearestHospital == -1) {
+        cout << "Cannot access any hospitals" << endl;
+        return;
+    } else {
+        int costToHospital;
+        vector<int> pathToHospital = dijkstra(from, nearestHospital, costToHospital);
+        cout << "Path: ";
+        printPath(pathToHospital);
+        cout << "Distance: " << costToHospital << endl;
+    }
+    cout << endl;
+}
+
+void GridGraph::printPath(const vector<int>& path) {
+    for (size_t i = 0; i < path.size(); i++) {
+        cout << nodes[path[i]].name;
+        if (i != path.size() - 1) cout << " -> ";
+    }
+    cout << endl;
+}
+
+void GridGraph::simulateearthquake(int epicenterID) {
+    int V = n * n;
+    vector<int> dist(V, numeric_limits<int>::max());
+    dist[epicenterID] = 0;
+
+    mt19937 gen(time(0));
+    uniform_int_distribution<> dis(5.0, 10.0);
+    int maxDistance = dis(gen);
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    pq.push({ 0, epicenterID });
+
+    while (!pq.empty()) {
+        auto currDist = pq.top().first;
+        auto currNode = pq.top().second;
+        pq.pop();
+
+        if (currDist > maxDistance) break;
+        if (nodes[currNode].type != DISASTER)
+            nodes[currNode].type = DISASTER;
+
+        for (auto& edge : adj[currNode]) {
+            int neighbor = edge.to;
+            int nextDist = currDist + edge.weight;
+            if (nextDist <= maxDistance && nextDist < dist[neighbor]) {
+                dist[neighbor] = nextDist;
+                pq.push({ nextDist, neighbor });
+            }
+        }
+    }
+    damage();
+}
+
+void GridGraph::simulateRain() {
+    mt19937 gen(time(0));
+    uniform_int_distribution<> ran(1, 4);
+    int severity = ran(gen);
+
+    for (auto &node : nodes)
+        if (node.drain <= severity)
+            node.type = DISASTER;
+
+    damage();
+}
+
+void GridGraph::damage() {
+    cout << "Damaged nodes:" << endl;
+    for (auto& node : nodes)
+        if (node.type == DISASTER)
+            cout << node.name << " (ID " << node.id << ")" << endl;
+    cout << endl;
+}
+\end{lstlisting}
+\section{Main Simulation Program}
+
+\begin{lstlisting}[style=cpp, caption={main.cpp – Disaster Management System Simulation}]
+#include "GridGraph.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    // Interactive simulation menu
+    cout << "==========================================\n";
+    cout << "     EMERGENCY RESPONSE SIMULATION  \n";
+    cout << "==========================================\n";
+
+    int n;
+    cout << "Enter grid size (e.g., 5 for 5x5 grid): ";
+    cin >> n;
+    if (n <= 1) {
+        cout << " Invalid grid size. Using default 5x5.\n";
+        n = 5; // default grid size
+    }
+
+    GridGraph g(n);
+    g.buildGrid(); // calls the graph constructor
+
+    cout << "\n " << n << "x" << n << " grid created successfully!\n";
+    cout << "Each node ID ranges from 0 to " << (n * n - 1) << ".\n";
+    cout << "Default: Node 0 = Ambulance | Node " << (n*n - 1) << " = Hospital\n";
+
+    // Default starting setup
+    g.assignNodeType(0, AMBULANCE, "AmbulanceStation");
+    g.assignNodeType(n * n - 1, HOSPITAL, "CityHospital");
+
+    bool running = true;
+    while (running) {
+        cout << "\n=====================================\n";
+        cout << "           MAIN MENU\n";
+        cout << "=====================================\n";
+        cout << "1. Add Ambulance\n";
+        cout << "2. Add House\n";
+        cout << "3. Add Hospital\n";
+        cout << "4. Trigger Emergency at a House\n";
+        cout << "5. Simulate Earthquake\n";
+        cout << "6. Simulate Rain\n";
+        cout << "7. Show Damaged Nodes\n";
+        cout << "8. Exit Simulation\n";
+        cout << "-------------------------------------\n";
+        cout << "Enter your choice: ";
+
+        int choice;
+        cin >> choice;
+        cout << endl;
+
+        switch (choice) {
+            case 1: {
+                int id;
+                cout << "Enter node ID to assign as Ambulance : ";
+                cin >> id;
+                if (id >= 0 && id < n*n) {
+                    g.assignNodeType(id, AMBULANCE, "Ambulance_" + to_string(id));
+                    cout << " Ambulance assigned to node " << id << endl;
+                } else cout << " Invalid node ID.\n";
+                break;
+            }
+
+            case 2: {
+                int id;
+                cout << "Enter node ID to assign as House : ";
+                cin >> id;
+                if (id >= 0 && id < n*n) {
+                    g.assignNodeType(id, HOUSE, "House_" + to_string(id));
+                    cout << " House assigned to node " << id << endl;
+                } else cout << " Invalid node ID.\n";
+                break;
+            }
+
+            case 3: {
+                int id;
+                cout << "Enter node ID to assign as Hospital : ";
+                cin >> id;
+                if (id >= 0 && id < n*n) {
+                    g.assignNodeType(id, HOSPITAL, "Hospital_" + to_string(id));
+                    cout << " Hospital assigned to node " << id << endl;
+                } else cout << " Invalid node ID.\n";
+                break;
+            }
+
+            case 4: {
+                int houseID;
+                cout << "Enter house node ID for emergency: ";
+                cin >> houseID;
+                if (houseID >= 0 && houseID < n*n) {
+                    cout << "\n Emergency triggered at node " << houseID << "!\n";
+                    g.emergency(houseID);
+                } else cout << "Invalid node ID.\n";
+                break;
+            }
+
+            case 5: {
+                int epicenter;
+                cout << "Enter earthquake epicenter node ID: ";
+                cin >> epicenter;
+                if (epicenter >= 0 && epicenter < n*n) {
+                    cout << "\n Simulating Earthquake...\n";
+                    g.simulateearthquake(epicenter);
+                } else cout << "Invalid node ID.\n";
+                break;
+            }
+
+            case 6: {
+                cout << "\n Simulating Rainfall and Drainage Failure...\n";
+                g.simulateRain();
+                break;
+            }
+
+            case 7: {
+                g.damage();
+                break;
+            }
+
+            case 8: {
+                running = false;
+                cout << "\n Exiting Emergency Response Simulation. Stay safe!\n";
+                break;
+            }
+
+            default:
+                cout << "Invalid option. Please try again.\n";
+        }
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+\chapter{Simulation and Output}
+
+\section*{Simulation Output}
+
+The following test case demonstrates a complete simulation involving both an earthquake and rainfall scenario on a $5 \times 5$ grid. 
+Multiple houses, ambulances, and hospitals are configured, and disaster events are simulated to observe how the system adapts dynamically.
+
+\subsection*{Testcase 2 — Earthquake + Rain Scenario}
+
+\begin{lstlisting}[style=cpp]
+==============================
+TESTCASE 2 (EARTHQUAKE + RAIN)
+==============================
+
+Grid size: 5x5
+Ambulances at nodes: 0 12
+Hospitals at nodes: 24
+Houses at nodes: 3 7 14
+Emergency triggered at houses: 3 7 14
+Earthquake epicenter node: 10
+Rain
+
+==========================================
+     EMERGENCY RESPONSE SIMULATION
+==========================================
+Enter grid size (e.g., 5 for 5x5 grid): 5
+
+ 5x5 grid created successfully!
+Each node ID ranges from 0 to 24.
+Default: Node 0 = Ambulance | Node 24 = Hospital
+
+...
+(Full console output continues here — keep entire content)
+...
+Enter your choice: 8
+\end{lstlisting}
+
+\subsection*{Observation}
+The simulation shows that:
+\begin{itemize}
+    \item Earthquake events disable nearby nodes (ambulances and intersections).
+    \item Rain further affects drainage nodes, increasing travel distance.
+    \item When all ambulances are damaged, the system reroutes paths using the nearest available hospital as fallback.
+\end{itemize}
+
+\chapter{Potential Future Improvements}
+\section{Potential Future Improvements}
+
+While the current simulation successfully demonstrates pathfinding, disaster impact, and dynamic re-routing in a grid network, there are several ways it can be enhanced further:
+
+\subsection*{1. Enhanced Visualization}
+\begin{itemize}
+    \item Integrate a graphical interface (using SFML, OpenGL, or Python’s matplotlib) to visually display the grid, damaged nodes, and paths.
+    \item Use color-coded nodes for ambulances, hospitals, houses, and disaster zones.
+\end{itemize}
+
+\subsection*{2. Realistic Disaster Modeling}
+\begin{itemize}
+    \item Extend earthquake simulation to include intensity decay based on distance from the epicenter.
+    \item Model flood spread dynamically over time instead of static damage.
+    \item Introduce multiple simultaneous disasters for stress-testing response.
+\end{itemize}
+
+\subsection*{3. Smarter Emergency Response}
+\begin{itemize}
+    \item Implement multiple ambulances working cooperatively with load balancing.
+    \item Add real-time traffic variation by updating edge weights dynamically.
+    \item Integrate AI-based dispatch algorithms for optimal resource allocation.
+\end{itemize}
+
+\subsection*{4. Data Integration and Scalability}
+\begin{itemize}
+    \item Use real-world GIS data or APIs (e.g., OpenStreetMap) to simulate realistic city grids.
+    \item Support larger grid sizes with more efficient graph representations.
+    \item Store and analyze multiple simulation runs for statistical insights.
+\end{itemize}
+
+\subsection*{5. User Experience and Extensibility}
+\begin{itemize}
+    \item Add interactive controls for triggering disasters and placing resources.
+    \item Provide exportable logs or CSV summaries of all emergency responses.
+    \item Enable plug-and-play design for future algorithm experiments.
+\end{itemize}
+
+These improvements would transform the current command-line simulation into a richer, scalable, and visually engaging emergency response model.
+
+
+\chapter{Conclusion}
+
+This C++-based Disaster Management System effectively simulates disaster scenarios using graph theory concepts.
+It leverages Dijkstra’s algorithm to determine optimal routes for ambulances and hospitals,
+while dynamic events such as rainfall and earthquakes alter the network structure in real time.
+The program can serve as a foundational model for more complex GIS-based emergency management systems.
+
+\chapter{Acknowledgement}
+
+We would like to express our sincere gratitude to our respected faculty guide, 
+\textbf{Dr.~C.~Ostwald}, for his constant guidance, support, and encouragement throughout 
+this project. His insightful teaching and structured approach to learning helped us 
+strengthen our understanding of \textbf{Data Structures and Algorithms}, and this project 
+provided a practical opportunity to apply those concepts in a meaningful way.
+
+We would also like to thank our institution and the Department of Computer Science 
+for providing us with the resources and platform to work on this project successfully.
+
+\chapter{Team Contributions}
+
+\begin{itemize}
+    \item \textbf{G. Aakash (106124034)} — Implemented the \textbf{Shortest Path Algorithm (Dijkstra’s Algorithm)}, 
+    designed the \textbf{Grid Representation}, and contributed to overall \textbf{code modularity and structure}.
+    \item \textbf{Jothi Roshini (106124046)} — Developed the \textbf{Rainfall and Flood Simulation Module}, 
+    managed node drainage logic, and worked on improving \textbf{code modularity and clarity}.
+    \item \textbf{P. Saketh Koundinya (106124084)} — Implemented the \textbf{Earthquake Simulation Module}, 
+    handled dynamic node damage propagation, and contributed to overall \textbf{code modularity and integration}.
+\end{itemize}
+
+\chapter{Takeaways}
+
+Working on this project allowed us to bridge theoretical learning with real-world application.  
+Through the design and implementation of this disaster management simulation, we gained valuable 
+experience in:
+
+\begin{itemize}
+    \item Applying graph theory concepts such as shortest path, adjacency representation, and traversal in a practical context.
+    \item Understanding how environmental factors like disasters can dynamically alter network connectivity.
+    \item Improving teamwork and modular coding practices while integrating different simulation modules cohesively.
+    \item Enhancing debugging, documentation, and presentation skills through iterative testing and report preparation.
+\end{itemize}
+
+Overall, this project strengthened our grasp of algorithms, sharpened our problem-solving skills, 
+and highlighted how computational thinking can contribute to real-world problem-solving, especially 
+in fields like emergency management and urban systems.
+
+
+\chapter{References and Further Reading}
+
+\subsection*{Algorithmic Concepts}
+\begin{itemize}
+    \item CP-Algorithms: \textit{Dijkstra's Algorithm for Shortest Paths} — \\ 
+    \url{https://cp-algorithms.com/graph/dijkstra.html}
+    \item CP-Algorithms: \textit{Graph Representation and Traversal (BFS/DFS)} — \\ 
+    \url{https://cp-algorithms.com/graph/breadth-first-search.html}
+    \item CP-Algorithms: \textit{Priority Queue and Heap Structures} — \\ 
+    \url{https://cp-algorithms.com/data_structures/priority_queue.html}
+    \item GeeksforGeeks: \textit{Implementation of Graphs and Pathfinding in C++} — \\
+    \url{https://www.geeksforgeeks.org/graph-data-structure-and-algorithms/}
+\end{itemize}
+
+\subsection*{Disaster Management and Simulation}
+\begin{itemize}
+    \item UNDRR (United Nations Office for Disaster Risk Reduction) — \\ 
+    \url{https://www.undrr.org/}
+    \item FEMA Emergency Management Training Resources — \\ 
+    \url{https://training.fema.gov/}
+    \item NASA Earth Observatory: \textit{Global Disasters and Hazards Mapping} — \\ 
+    \url{https://earthobservatory.nasa.gov/}
+    \item International Federation of Red Cross: \textit{Disaster Preparedness and Response Guidelines} — \\
+    \url{https://www.ifrc.org/disaster-management}
+\end{itemize}
+
+\end{document}
